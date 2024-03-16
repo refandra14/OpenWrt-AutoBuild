@@ -34,9 +34,9 @@ env:
   # REPO means the OpenWrt repo you want to build from in this workflow. 
   # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
   # other workflows.
-  REPO_NAME: example-name
-  REPO_URL: https://github.com/example/example.git
-  REPO_BRANCH: example-branch
+  REPO_NAME: ROOterSource2305
+  REPO_URL: https://github.com/ofmodemsandmen/ROOterSource2305.git
+  REPO_BRANCH: main
   BUILD_DEPENDS:  "ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
                    bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
                    git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev \
@@ -61,9 +61,9 @@ env:
   # The following are options of where the firmware needs to be transfered. 
   COWTRANSFER_FIRMWARE: false
   WETRANSFER_FIRMWARE: false
-  RELEASE_FIRMWARE: false
+  RELEASE_FIRMWARE: true
   # Change the following to your time zone.
-  TIME_ZONE: Asia/Shanghai
+  TIME_ZONE: Asia/Jakarta
 
 jobs:
   check:
