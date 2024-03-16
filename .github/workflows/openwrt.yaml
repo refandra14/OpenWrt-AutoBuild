@@ -13,7 +13,7 @@
 #-------------------------------------------------------------------------------------------------------
 
 # Workflow name which is showed in GitHub Actions.
-name: Build Example-Firmware for Example-Device
+name: Build Openwrt Image
 
 on:
   workflow_dispatch:
@@ -26,17 +26,13 @@ on:
         description: "SSH connection to Actions"
         required: false
         default: "false"
-# Uncomment the following to run regularly. Note that the cron expression here does not contain seconds.
-#  schedule:
-#    - cron: 0 */18 * * *
+  schedule:
+    - cron: 0 */18 * * *
 
 env:
-  # REPO means the OpenWrt repo you want to build from in this workflow. 
-  # You can modify the REPO_NAME to any name you want, but remember not to let it have the same name in 
-  # other workflows.
-  REPO_NAME: ROOterSource2305
-  REPO_URL: https://github.com/ofmodemsandmen/ROOterSource2305.git
-  REPO_BRANCH: main
+  REPO_NAME: openwrt
+  REPO_URL: https://github.com/openwrt/openwrt.git
+  REPO_BRANCH: openwrt-23.05
   BUILD_DEPENDS:  "ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
                    bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
                    git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev \
@@ -44,23 +40,8 @@ env:
                    libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 \
                    python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo \
                    uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev clang file nano aria2"
-  # CONFIG_FILE is the name of your own config files for compiling, you should upload these files into the root 
-  # directory of your workflow repo.
   CONFIG_FILE: image.config
-  # CUSTOM_SCRIPT_1 is the name of extra bash script you want to execute before feeds update&install.
-  # CUSTOM_SCRIPT_2 is the name of extra bash script you want to execute after feeds update&install.
-  # You can modify the initial settings of your firmware through these two scripts. If this is what you need,
-  # please upload your scripts to the root directory of your workflow repo.
-  CUSTOM_SCRIPT_1: example-custom-script-1.sh
-  CUSTOM_SCRIPT_2: example-custom-script-2.sh
-  # STORE_PRODUCTS determine whether to upload all compilation products to workflow artifacts.
-  # Not only firmwires, all compiled packages will be here, including compiled but not solidified into firmware.
-  STORE_PRODUCTS: false
-  # STORE_FIRMWARE determine whether to upload firmwares to workflow artifacts.
   STORE_FIRMWARE: true
-  # The following are options of where the firmware needs to be transfered. 
-  COWTRANSFER_FIRMWARE: false
-  WETRANSFER_FIRMWARE: false
   RELEASE_FIRMWARE: true
   # Change the following to your time zone.
   TIME_ZONE: Asia/Jakarta
@@ -189,12 +170,6 @@ jobs:
         if: (!cancelled())
         run: df -hT
 
-      - name: Upload all compilation products
-        uses: actions/upload-artifact@main
-        if: steps.compile.outputs.status == 'success' && env.STORE_PRODUCTS == 'true'
-        with:
-          name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-          path: openwrt/bin/
 
       - name: Organize firmware-related files
         id: organize-files
@@ -211,23 +186,6 @@ jobs:
           name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: ${{ env.FIRMWARE }}
 
-      - name: Upload firmware to cowtransfer
-        id: cowtransfer
-        if: steps.organize-files.outputs.status == 'success' && env.COWTRANSFER_FIRMWARE == 'true' && !cancelled()
-        run: |
-          curl -fsSL git.io/file-transfer | sh
-          ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
-          echo "::notice file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
-          echo "url=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
-
-      - name: Upload firmware to WeTransfer
-        id: wetransfer
-        if: steps.organize-files.outputs.status == 'success' && env.WETRANSFER_FIRMWARE == 'true' && !cancelled()
-        run: |
-          curl -fsSL git.io/file-transfer | sh
-          ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
-          echo "::notice file=wetransfer.com::$(cat wetransfer.log | grep https)"
-          echo "url=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
 
       - name: Generate release tag
         id: tag
@@ -236,18 +194,13 @@ jobs:
           echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
           touch release.txt
           echo "Build from $REPO_URL $REPO_BRANCH" >> release.txt
-          [ $COWTRANSFER_FIRMWARE = true -o $WETRANSFER_FIRMWARE = true ] && echo 'Products transfer:' >> release.txt
-          [ $COWTRANSFER_FIRMWARE = true ] && echo \
-            "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
-          [ $WETRANSFER_FIRMWARE = true ] && echo \
-            "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload firmware to release
         uses: softprops/action-gh-release@master
         if: steps.tag.outputs.status == 'success' && !cancelled()
         with:
-          tag_name: rooter
+          tag_name: ${{ env.REPO_NAME }}
           body_path: release.txt
           files: ${{ env.FIRMWARE }}/*
 
