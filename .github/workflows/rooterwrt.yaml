@@ -138,10 +138,44 @@ jobs:
         id: download-packages
         run: |
           cd openwrt/
-          #make defconfig
+          make defconfig
           #make download -j8
           #find dl -size -1024c -exec ls -l {} \;
           #find dl -size -1024c -exec rm -f {} \;
+
+      - name: Fix Config
+        id: fix-config
+        run: |
+          cd openwrt/
+          DNS=$(cat "./.config" | grep "CONFIG_PACKAGE_dnsmasq-full=y")
+		      if [ ! -z $DNS ]; then
+			      sed -i -e 's/CONFIG_PACKAGE_dnsmasq=y/# CONFIG_PACKAGE_dnsmasq is not set/g' ./.config
+		      fi
+		      WPAD=$(cat "./.config" | grep "CONFIG_PACKAGE_wpad-basic=y")
+		      if [ ! -z $WPAD ]; then
+			      sed -i -e 's/CONFIG_PACKAGE_wpad-basic=y/# CONFIG_PACKAGE_wpad-basic is not set/g' ./.config
+		      fi
+		      WPAD=$(cat "./.config" | grep "CONFIG_PACKAGE_wpad=y")
+		      if [ ! -z $WPAD ]; then
+			      sed -i -e 's/CONFIG_PACKAGE_wpad-mini=y/# CONFIG_PACKAGE_wpad-mini is not set/g' ./.config
+		      fi
+		      WPAD=$(cat "./.config" | grep "CONFIG_PACKAGE_wpad-mesh-openssl=y")
+		      if [ ! -z $WPAD ]; then
+			      sed -i -e 's/CONFIG_PACKAGE_wpad=y/# CONFIG_PACKAGE_wpad is not set/g' ./.config
+		      fi
+		
+		      WGET=$(cat "./.config" | grep "CONFIG_PACKAGE_wget ")
+		      if [ ! -z "$WGET" ]; then
+			      WGET=$(cat "./.config" | grep "# CONFIG_PACKAGE_wget is not set")
+			      if [ ! -z "$WGET" ]; then
+				      sed -i -e 's/# CONFIG_PACKAGE_wget is not set/CONFIG_PACKAGE_wget=y/g' ./.config
+				      make defconfig
+			      fi
+		      fi
+		      UQMI=$(cat "./.config" | grep "CONFIG_PACKAGE_uqmi=y")
+		      if [ ! -z $UQMI ]; then
+			      sed -i -e 's/CONFIG_PACKAGE_uqmi=y/# CONFIG_PACKAGE_uqmi is not set/g' ./.config
+		      fi
 
       - name: Compile the firmware
         id: compile
