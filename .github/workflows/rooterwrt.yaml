@@ -134,33 +134,13 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-      - name: Download packages
-        id: download-packages
-        run: |
-          cd openwrt/
-          make defconfig
-          #make download -j8
-          #find dl -size -1024c -exec ls -l {} \;
-          #find dl -size -1024c -exec rm -f {} \;
-
-      - name: Fix Config
-        id: fix-config
-        run: |
-          cd openwrt/
-          sed -i -e 's/CONFIG_PACKAGE_dnsmasq=y/# CONFIG_PACKAGE_dnsmasq is not set/g' .config
-          sed -i -e 's/CONFIG_PACKAGE_wpad-basic=y/# CONFIG_PACKAGE_wpad-basic is not set/g' .config
-          sed -i -e 's/CONFIG_PACKAGE_wpad=y/# CONFIG_PACKAGE_wpad-mini is not set/g' .config
-          sed -i -e 's/CONFIG_PACKAGE_wpad-mesh-openssl=y/# CONFIG_PACKAGE_wpad is not set/g' .config
-          sed -i -e 's/# CONFIG_PACKAGE_wget is not set/CONFIG_PACKAGE_wget=y/g' .config
-          sed -i -e 's/CONFIG_PACKAGE_uqmi=y/# CONFIG_PACKAGE_uqmi is not set/g' .config
-          sed -i -e 's/# CONFIG_PACKAGE_ext-rooter16 is not set/CONFIG_PACKAGE_ext-rooter16=y/g' .config
-      
       - name: Compile the firmware
         id: compile
         run: |
           cd openwrt/
           echo -e "$(nproc) thread compile"
-          make -j7 V=s
+          # make -j$(nproc)
+          make -j$(nproc) defconfig download clean world
           echo "status=success" >> $GITHUB_OUTPUT
           grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
           [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
@@ -169,7 +149,6 @@ jobs:
       - name: Check space usage
         if: (!cancelled())
         run: df -hT
-
 
       - name: Organize firmware-related files
         id: organize-files
