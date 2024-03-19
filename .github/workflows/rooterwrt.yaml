@@ -147,37 +147,13 @@ jobs:
         id: fix-config
         run: |
           cd openwrt/
-          DNS=$(cat "openwrt/.config" | grep "CONFIG_PACKAGE_dnsmasq-full=y")
-          if [ ! -z $DNS ]; then
-            sed -i -e 's/CONFIG_PACKAGE_dnsmasq=y/# CONFIG_PACKAGE_dnsmasq is not set/g' openwrt/.config
-          fi
-          WPAD=$(cat "openwrt/.config" | grep "CONFIG_PACKAGE_wpad-basic=y")
-          if [ ! -z $WPAD ]; then
-            sed -i -e 's/CONFIG_PACKAGE_wpad-basic=y/# CONFIG_PACKAGE_wpad-basic is not set/g' openwrt/.config
-          fi
-          WPAD=$(cat "openwrt/.config" | grep "CONFIG_PACKAGE_wpad=y")
-          if [ ! -z $WPAD ]; then
-            sed -i -e 's/CONFIG_PACKAGE_wpad-mini=y/# CONFIG_PACKAGE_wpad-mini is not set/g' openwrt/.config
-          fi
-          WPAD=$(cat "openwrt/.config" | grep "CONFIG_PACKAGE_wpad-mesh-openssl=y")
-          if [ ! -z $WPAD ]; then
-            sed -i -e 's/CONFIG_PACKAGE_wpad=y/# CONFIG_PACKAGE_wpad is not set/g' openwrt/.config
-          fi
-          
-          WGET=$(cat "openwrt/.config" | grep "CONFIG_PACKAGE_wget ")
-          if [ ! -z "$WGET" ]; then
-            WGET=$(cat "openwrt/.config" | grep "# CONFIG_PACKAGE_wget is not set")
-            if [ ! -z "$WGET" ]; then
-              sed -i -e 's/# CONFIG_PACKAGE_wget is not set/CONFIG_PACKAGE_wget=y/g' openwrt/.config
-              make defconfig
-            fi
-          fi
-          UQMI=$(cat "openwrt/.config" | grep "CONFIG_PACKAGE_uqmi=y")
-          if [ ! -z $UQMI ]; then
-            sed -i -e 's/CONFIG_PACKAGE_uqmi=y/# CONFIG_PACKAGE_uqmi is not set/g' openwrt/.config
-          fi
-
-          sed -i -e 's/# CONFIG_PACKAGE_ext-rooter16 is not set/CONFIG_PACKAGE_ext-rooter16=y/g' openwrt/.config
+          sed -i -e 's/CONFIG_PACKAGE_dnsmasq=y/# CONFIG_PACKAGE_dnsmasq is not set/g' .config
+          sed -i -e 's/CONFIG_PACKAGE_wpad-basic=y/# CONFIG_PACKAGE_wpad-basic is not set/g' .config
+          sed -i -e 's/CONFIG_PACKAGE_wpad=y/# CONFIG_PACKAGE_wpad-mini is not set/g' .config
+          sed -i -e 's/CONFIG_PACKAGE_wpad-mesh-openssl=y/# CONFIG_PACKAGE_wpad is not set/g' .config
+          sed -i -e 's/# CONFIG_PACKAGE_wget is not set/CONFIG_PACKAGE_wget=y/g' .config
+          sed -i -e 's/CONFIG_PACKAGE_uqmi=y/# CONFIG_PACKAGE_uqmi is not set/g' .config
+          sed -i -e 's/# CONFIG_PACKAGE_ext-rooter16 is not set/CONFIG_PACKAGE_ext-rooter16=y/g' .config
       
       - name: Compile the firmware
         id: compile
