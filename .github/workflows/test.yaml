@@ -1,0 +1,101 @@
+name: Build OpenWrt for x86-64
+
+on:
+    workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: false
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses-dev gawk python3 unzip wget git rsync
+
+    - name: Prepare OpenWrt build environment
+      run: |
+        git clone https://github.com/openwrt/openwrt.git
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Configure OpenWrt
+      run: |
+        cd openwrt
+        make defconfig
+        make menuconfig
+
+        # You can also set CONFIG_IB=y directly in .config if needed
+        echo 'CONFIG_IB=y' >> .config
+
+    - name: Build OpenWrt
+      run: |
+        cd openwrt
+        make -j$(nproc) || make -j1 V=s
+
+        - name: Check space usage
+        if: (!cancelled())
+        run: df -hT
+
+    - name: Organize firmware-related files
+      id: organize-files
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages/
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Generate release tag
+      id: tag
+      if: (!cancelled())
+      run: |
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        touch release.txt
+        echo "Build from $REPO_URL $REPO_BRANCH" >> release.txt
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@master
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      with:
+        tag_name: ${{ env.REPO_NAME }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
+  clean:
+    name: Clean up old assets
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+
+    steps:
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          retain_days: 1
+          keep_minimum_runs: 1
+
+ #     - name: Remove old Releases
+ #       uses: dev-drprasad/delete-older-releases@master
+ #       if: env.RELEASE_FIRMWARE == 'true' && !cancelled()
+ #       with:
+ #         keep_latest: 3
+ #         delete_tags: true
+ #       env:
+ #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
