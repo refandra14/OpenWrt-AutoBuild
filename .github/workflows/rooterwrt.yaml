@@ -151,8 +151,8 @@ jobs:
         run: |
           cd openwrt/
           make defconfig
-          make download -j$(($(nproc)+1))
-          find dl -size -1024c -exec rm -f {} \;
+          # make download -j$(($(nproc)+1))
+          # find dl -size -1024c -exec rm -f {} \;
 
       - name: Compile the firmware
         id: compile
@@ -160,7 +160,7 @@ jobs:
           cd openwrt/
           echo -e "$(($(nproc)+1)) thread compile"
           # make -j$(($(nproc)+1)) || make -j1 V=s
-          make -j$(($(nproc)+1)) image PROFILE=x86_64
+          make -j$(($(nproc)+1)) V=s image PROFILE=x86_64
           echo "status=success" >> $GITHUB_OUTPUT
           grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
           [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
